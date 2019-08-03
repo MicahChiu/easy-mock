@@ -133,6 +133,7 @@ export default {
           }
         },
         { type: 'selection', width: 60, align: 'center' },
+        { title: 'DT-Token', width: 100, ellipsis: true, key: 'dd_notity' },
         {
           title: 'Method',
           width: 110,
@@ -160,7 +161,7 @@ export default {
             </tag>
           }
         },
-        { title: 'URL', width: 420, ellipsis: true, sortable: true, key: 'url' },
+        { title: 'URL', width: 320, ellipsis: true, sortable: true, key: 'url' },
         { title: this.$t('p.detail.columns[0]'), ellipsis: true, key: 'description' },
         {
           title: this.$t('p.detail.columns[1]'),

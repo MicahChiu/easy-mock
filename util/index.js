@@ -7,8 +7,11 @@ const rimraf = require('rimraf')
 const Redis = require('ioredis')
 const moment = require('moment')
 const bcrypt = require('bcryptjs')
+const dingTalkBot = require('dingtalk-robot-sender')
 const pathToRegexp = require('path-to-regexp')
-const { MockCountProxy } = require('../proxy')
+const {
+  MockCountProxy
+} = require('../proxy')
 
 const redis = new Redis(config.get('redis'))
 
@@ -17,7 +20,7 @@ module.exports = class BaseUtil {
    * 初始化操作
    */
 
-  static async init () {
+  static async init() {
     this.dropFileSchedule()
     this.mockUseCountSchedule()
   }
@@ -26,7 +29,7 @@ module.exports = class BaseUtil {
    * 获取 redis 实例
    */
 
-  static getRedis () {
+  static getRedis() {
     return redis
   }
 
@@ -35,7 +38,7 @@ module.exports = class BaseUtil {
    * @param String str
    */
 
-  static bhash (str) {
+  static bhash(str) {
     return bcrypt.hashSync(str, 8)
   }
 
@@ -45,7 +48,7 @@ module.exports = class BaseUtil {
    * @param String hash
    */
 
-  static bcompare (str, hash) {
+  static bcompare(str, hash) {
     return bcrypt.compareSync(str, hash)
   }
 
@@ -54,7 +57,7 @@ module.exports = class BaseUtil {
    * @param String str
    */
 
-  static safeDecodeURIComponent (str) {
+  static safeDecodeURIComponent(str) {
     try {
       return decodeURIComponent(str)
     } catch (e) {
@@ -71,7 +74,7 @@ module.exports = class BaseUtil {
    * @param String fullURL /user/nick
    */
 
-  static params (restURL, fullURL) {
+  static params(restURL, fullURL) {
     const params = {}
     const paramNames = []
     const api = pathToRegexp(restURL, paramNames)
@@ -93,7 +96,7 @@ module.exports = class BaseUtil {
    * 定时删除已经上传的过期文件
    */
 
-  static dropFileSchedule () {
+  static dropFileSchedule() {
     const conf = config.get('upload')
     const expireDay = conf.expire.day
 
@@ -109,8 +112,8 @@ module.exports = class BaseUtil {
     }
   }
 
-  static mockUseCountSchedule () {
-    async function run () {
+  static mockUseCountSchedule() {
+    async function run() {
       const len = await redis.llen('mock.count')
       if (len === 0) return
       const mockIds = await redis.lrange('mock.count', -len, len)
@@ -129,12 +132,12 @@ module.exports = class BaseUtil {
    */
 
   /* istanbul ignore next */
-  static flatten (obj) {
+  static flatten(obj) {
     const flattened = {}
     const circlular = []
     const circLoc = []
 
-    function _route (prefix, value) {
+    function _route(prefix, value) {
       let i, len, keys, circularCheck, loc
 
       if (value == null) {
@@ -177,5 +180,26 @@ module.exports = class BaseUtil {
     _route('', obj)
 
     return flattened
+  }
+
+  static sendDingTalk(token, resMock) {
+    if (token && resMock) {
+      const robot = new dingTalkBot({
+        webhook: 'https://oapi.dingtalk.com/robot/send?access_token=' + token
+      });
+
+      let title = resMock.url;
+      let text = "> #### URL：\n\n" +
+        "(" + resMock.method + ") " + resMock.url + "\n" +
+        "> #### 描述：\n\n" +
+        "" + resMock.description + "\n\n" +
+        "---\n" +
+        "访问详情 ：[点击访问](" + config.get('proxyDomain') + "/mock/" + resMock.project._id + resMock.project.url + resMock.url + ") \n";
+      let at2 = {
+        "atMobiles": [],
+        "isAtAll": true
+      };
+      robot.markdown(title, text, at2);
+    }
   }
 }

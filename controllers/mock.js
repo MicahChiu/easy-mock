@@ -1,7 +1,9 @@
 'use strict'
 
 const _ = require('lodash')
-const { VM } = require('vm2')
+const {
+  VM
+} = require('vm2')
 const nodeURL = require('url')
 const JSZip = require('jszip')
 const Mock = require('mockjs')
@@ -11,12 +13,16 @@ const pathToRegexp = require('path-to-regexp')
 
 const util = require('../util')
 const ft = require('../models/fields_table')
-const { MockProxy, ProjectProxy, UserGroupProxy } = require('../proxy')
+const {
+  MockProxy,
+  ProjectProxy,
+  UserGroupProxy
+} = require('../proxy')
 
 const redis = util.getRedis()
 const defPageSize = config.get('pageSize')
 
-async function checkByMockId (mockId, uid) {
+async function checkByMockId(mockId, uid) {
   const api = await MockProxy.getById(mockId)
 
   if (!api) return '接口不存在'
@@ -24,16 +30,24 @@ async function checkByMockId (mockId, uid) {
   const project = await checkByProjectId(api.project.id, uid)
 
   if (typeof project === 'string') return project
-  return { api, project }
+  return {
+    api,
+    project
+  }
 }
 
-async function checkByProjectId (projectId, uid) {
-  const project = await ProjectProxy.findOne({ _id: projectId })
+async function checkByProjectId(projectId, uid) {
+  const project = await ProjectProxy.findOne({
+    _id: projectId
+  })
 
   if (project) {
     const group = project.group
     if (group) {
-      const userGroup = await UserGroupProxy.findOne({ user: uid, group: group })
+      const userGroup = await UserGroupProxy.findOne({
+        user: uid,
+        group: group
+      })
       if (!userGroup) return '无权限操作'
     } else if (project.user.id !== uid) {
       /* istanbul ignore else */
@@ -51,13 +65,14 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async create (ctx) {
+  static async create(ctx) {
     const uid = ctx.state.user.id
     const mode = ctx.checkBody('mode').notEmpty().value
     const projectId = ctx.checkBody('project_id').notEmpty().value
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
+    const ddNotity = ctx.checkBody('dd_notity').value
 
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
@@ -82,14 +97,16 @@ module.exports = class MockController {
       return
     }
 
-    await MockProxy.newAndSave({
+    let resMock = await MockProxy.newAndSave({
       project: projectId,
       description,
       method,
       url,
-      mode
+      mode,
+      dd_notity: ddNotity
     })
-
+    resMock = await MockProxy.getById(resMock[0]._id)
+    util.sendDingTalk(ddNotity, resMock)
     await redis.del('project:' + projectId)
     ctx.body = ctx.util.resuccess()
   }
@@ -99,7 +116,7 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async list (ctx) {
+  static async list(ctx) {
     const uid = ctx.state.user.id
     const keywords = ctx.query.keywords
     const projectId = ctx.checkQuery('project_id').notEmpty().value
@@ -117,7 +134,9 @@ module.exports = class MockController {
       sort: '-create_at'
     }
 
-    const where = { project: projectId }
+    const where = {
+      project: projectId
+    }
 
     if (keywords) {
       const keyExp = new RegExp(keywords)
@@ -145,8 +164,10 @@ module.exports = class MockController {
     }
 
     mocks = mocks.map(o => _.pick(o, ft.mock))
-
-    ctx.body = ctx.util.resuccess({ project: project || {}, mocks })
+    ctx.body = ctx.util.resuccess({
+      project: project || {},
+      mocks
+    })
   }
 
   /**
@@ -154,13 +175,14 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async update (ctx) {
+  static async update(ctx) {
     const uid = ctx.state.user.id
     const id = ctx.checkBody('id').notEmpty().value
     const mode = ctx.checkBody('mode').notEmpty().value
     const description = ctx.checkBody('description').notEmpty().value
     const url = ctx.checkBody('url').notEmpty().match(/^\/.*$/i, 'URL 必须以 / 开头').value
     const method = ctx.checkBody('method').notEmpty().toLow().in(['get', 'post', 'put', 'delete', 'patch']).value
+    const ddNotity = ctx.checkBody('dd_notity').value
 
     if (ctx.errors) {
       ctx.body = ctx.util.refail(null, 10001, ctx.errors)
@@ -174,15 +196,21 @@ module.exports = class MockController {
       return
     }
 
-    const { api, project } = result
+    const {
+      api,
+      project
+    } = result
 
     api.url = url
     api.mode = mode
     api.method = method
     api.description = description
+    api.dd_notity = ddNotity;
 
     const existMock = await MockProxy.findOne({
-      _id: { $ne: api.id },
+      _id: {
+        $ne: api.id
+      },
       project: project.id,
       url: api.url,
       method: api.method
@@ -193,7 +221,12 @@ module.exports = class MockController {
       return
     }
 
-    await MockProxy.updateById(api)
+    let resMock = await MockProxy.updateById(api)
+    if (!resMock) {
+      ctx.body = ctx.util.refail('err')
+      return
+    }
+    util.sendDingTalk(ddNotity, resMock)
     await redis.del('project:' + project.id)
     ctx.body = ctx.util.resuccess()
   }
@@ -203,11 +236,17 @@ module.exports = class MockController {
    * @param {*} ctx
    */
 
-  static async getMockAPI (ctx) {
-    const { query, body } = ctx.request
+  static async getMockAPI(ctx) {
+    const {
+      query,
+      body
+    } = ctx.request
     const method = ctx.method.toLowerCase()
     const jsonpCallback = query.jsonp_param_name && (query[query.jsonp_param_name] || 'callback')
-    let { projectId, mockURL } = ctx.pathNode
+    let {
+      projectId,
+      mockURL
+    } = ctx.pathNode
     const redisKey = 'project:' + projectId
     let apiData, apis, api
 
@@ -216,7 +255,9 @@ module.exports = class MockController {
     if (apis) {
       apis = JSON.parse(apis)
     } else {
-      apis = await MockProxy.find({ project: projectId })
+      apis = await MockProxy.find({
+        project: projectId
+      })
       if (apis[0]) await redis.set(redisKey, JSON.stringify(apis), 'EX', 60 * 30)
     }
 
@@ -310,7 +351,7 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async getAPIByProjectIds (ctx) {
+  static async getAPIByProjectIds(ctx) {
     let projectIds = ctx.checkQuery('project_ids').notEmpty().value
 
     if (ctx.errors) {
@@ -354,7 +395,7 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async exportAPI (ctx) {
+  static async exportAPI(ctx) {
     const zip = new JSZip()
     const ids = ctx.checkBody('ids').empty().type('array').value
     const projectId = ctx.checkBody('project_id').empty().value
@@ -366,7 +407,9 @@ module.exports = class MockController {
     }
 
     if (projectId) {
-      apis = await MockProxy.find({ project: projectId })
+      apis = await MockProxy.find({
+        project: projectId
+      })
     } else if (!_.isEmpty(ids)) {
       apis = await MockProxy.find({
         _id: {
@@ -387,7 +430,9 @@ module.exports = class MockController {
       zip.file(`${api.project.url}${api.url}.json`, api.mode)
     })
 
-    const content = await zip.generateAsync({ type: 'nodebuffer' })
+    const content = await zip.generateAsync({
+      type: 'nodebuffer'
+    })
 
     ctx.set('Content-disposition', 'attachment; filename=Easy-Mock-API.zip')
     ctx.body = content
@@ -398,7 +443,7 @@ module.exports = class MockController {
    * @param Object ctx
    */
 
-  static async delete (ctx) {
+  static async delete(ctx) {
     const uid = ctx.state.user.id
     const projectId = ctx.checkBody('project_id').notEmpty().value
     const ids = ctx.checkBody('ids').notEmpty().type('array').value

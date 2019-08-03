@@ -169,6 +169,7 @@ export default {
         { category: 'Action', list: ['Create new Mock', 'Add / Remove Work Station', 'Sync with Swagger'] }
       ],
       columns: ['Description', 'Action'],
+      funcNames: ['DingDing notity token'],
       action: ['Preview Mock', 'Edit Mock', 'Copy Mock Address', 'Copy', 'Delete'],
       copySuccess: 'Project address is in clipboard',
       syncSwagger: {

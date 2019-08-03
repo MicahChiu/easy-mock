@@ -20,18 +20,17 @@ module.exports = class MockProxy {
   }
 
   static updateById (mock) {
-    return Mock.update({
-      _id: mock.id
-    }, {
+    return Mock.findByIdAndUpdate(mock.id, {
       $set: {
         url: mock.url,
         mode: mock.mode,
         method: mock.method,
         parameters: mock.parameters,
         description: mock.description,
-        response_model: mock.response_model
+        response_model: mock.response_model,
+        dd_notity: mock.dd_notity
       }
-    })
+    }).populate('project')
   }
 
   static updateMany (docs) {

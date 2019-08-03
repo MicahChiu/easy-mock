@@ -56,7 +56,8 @@ module.exports = class LDAPUtil {
 
       const opts = {
         scope: 'sub',
-        filter: `(${ldapConf.filter.attributeName}=${username})`
+        filter: `(${ldapConf.filter.attributeName}=${username})`,
+        timeLimit: 500
       }
 
       client.search(ldapConf.filter.base, opts, (err, search) => {
@@ -83,8 +84,8 @@ module.exports = class LDAPUtil {
                 passwd: password
               }
             }).then(client => {
-              // unbind connection is disconnected
-              client.unbind(() => resolve(true))
+              client.unbind();
+              resolve(true);
             }).catch(() => {
               reject(new Error('用户名或密码错误'))
             })

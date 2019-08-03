@@ -5,6 +5,7 @@
   "proxy": false,
   "db": "mongodb://localhost/easy-mock",
   "unsplashClientId": "",
+  "proxyDomain": "http://127.0.0.1:7300",
   "redis": {
     "keyPrefix": "[Easy Mock]",
     "port": 6379,

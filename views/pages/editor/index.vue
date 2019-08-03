@@ -22,6 +22,9 @@
             <Form-item :label="$t('p.detail.columns[0]')">
               <i-input v-model="temp.description"></i-input>
             </Form-item>
+            <Form-item :label="$t('p.detail.funcNames[0]')">
+              <i-input v-model="temp.dd_notity"></i-input>
+            </Form-item>
             <Form-item :label="$t('p.detail.editor.autoClose')" v-if="isEdit">
               <i-switch v-model="autoClose"></i-switch>
             </Form-item>
@@ -131,6 +134,7 @@ export default {
       this.temp.mode = this.mockData.mode
       this.temp.method = this.mockData.method
       this.temp.description = this.mockData.description
+      this.temp.dd_notity = this.mockData.dd_notity
     }
 
     this.$nextTick(() => {
