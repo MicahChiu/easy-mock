@@ -29,7 +29,7 @@ easy-mock 钉钉(DingTalk)是一个可视化，并且能快速生成**模拟数�
 
 ## 快速开始
 
-> 在开始之前，假设你已经成功安装了 [Node.js](https://nodejs.org)（**v8.x, ~~不支持 v10.x~~**）& [MongoDB](https://www.mongodb.com)（**>= v3.4**）& [Redis](https://redis.io)（**>= v4.0**）。
+> 在开始之前，假设你已经成功安装了 [Node.js](https://nodejs.org) && [MongoDB](https://www.mongodb.com) && [Redis](https://redis.io)
 
 ### 安装
 
