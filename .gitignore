@@ -28,4 +28,4 @@ dist
 config
 views/config.json
 public/upload
-yarn.lock
+*.lock

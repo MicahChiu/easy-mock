@@ -86,11 +86,16 @@ module.exports = class MockController {
       return
     }
 
-    const api = await MockProxy.findOne({
-      project: projectId,
-      url,
-      method
+    const apis = await MockProxy.find({
+      project: projectId
     })
+
+    const api = apis.filter((item) => {
+      const itemIndex = item.url.indexOf('?')
+      const itemUrl = item.url.substring(0, (itemIndex !== -1)? itemIndex : item.url.length).replace(/{/g, ':').replace(/}/g, '')
+      const baseIndex = url.indexOf('?') 
+      return item.method === method && pathToRegexp(itemUrl).test(url.substring(0, (baseIndex !== -1)? baseIndex : url.length))
+    })[0]
 
     if (api) {
       ctx.body = ctx.util.refail('请检查接口是否已经存在')
@@ -207,16 +212,18 @@ module.exports = class MockController {
     api.description = description
     api.dd_notity = ddNotity;
 
-    const existMock = await MockProxy.findOne({
-      _id: {
-        $ne: api.id
-      },
-      project: project.id,
-      url: api.url,
-      method: api.method
+    const apifs = await MockProxy.find({
+      project: project.id
     })
 
-    if (existMock) {
+    const apif = apifs.filter((item) => {
+      const itemIndex = item.url.indexOf('?')
+      const itemUrl = item.url.substring(0, (itemIndex !== -1)? itemIndex : item.url.length).replace(/{/g, ':').replace(/}/g, '')
+      const baseIndex = url.indexOf('?') 
+      return item.method === method && pathToRegexp(itemUrl).test(url.substring(0, (baseIndex !== -1)? baseIndex : url.length))
+    })[0] 
+
+    if(apif && !apif._id.equals(api.id)){ 
       ctx.body = ctx.util.refail('接口已经存在')
       return
     }
@@ -266,8 +273,9 @@ module.exports = class MockController {
     }
 
     api = apis.filter((item) => {
-      const url = item.url.replace(/{/g, ':').replace(/}/g, '') // /api/{user}/{id} => /api/:user/:id
-      return item.method === method && pathToRegexp(url).test(mockURL)
+      const index = item.url.indexOf('?')
+      const itemUrl = item.url.substring(0, (index !== -1)? index : item.url.length).replace(/{/g, ':').replace(/}/g, '')
+      return item.method === method && pathToRegexp(itemUrl).test(mockURL)
     })[0]
 
     if (!api) ctx.throw(404)
