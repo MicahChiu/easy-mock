@@ -81,7 +81,7 @@ export default {
       temp: {
         url: '',
         mode: '{"data": {}}',
-        method: 'get',
+        method: '',
         description: ''
       }
     }
